@@ -11,8 +11,8 @@ export class Service {
     this.client
       .setEndpoint(conf.appwriteUrl)
       .setProject(conf.appwriteProjectId);
-    this.tablesDB = new TablesDB(client);
-    this.bucket = new Storage(client);
+    this.tablesDB = new TablesDB(this.client);
+    this.bucket = new Storage(this.client);
   }
 
   async createPost({ title, slug, content, featuredImage, status, userId }) {
@@ -110,7 +110,7 @@ export class Service {
     }
   }
 
-  async deletefile(fileId){
+  async deleteFile(fileId){
     try {
         await this.bucket.deleteFile({
             bucketId:conf.appwriteBucketId,
@@ -131,5 +131,5 @@ export class Service {
   }
 }
 
-const service = new Service();
-export default service;
+const Appwriteservice = new Service();
+export default Appwriteservice;
