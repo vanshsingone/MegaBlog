@@ -45,15 +45,18 @@
         }
     }
 
-    async getCurrentUser(){
-        try {
-             await this.account.get();
-        } catch (error) {
-            console.log("Appwrite service :: getCurrentUser :: error", error);
-            ;
-        }
-        return null;
+    async getCurrentUser() {
+    try {
+        // You MUST return the result of the account.get() call
+        return await this.account.get();
+    } catch (error) {
+        // This catches the 401 "Unauthorized" error if no one is logged in
+        console.log("Appwrite service :: getCurrentUser :: error", error);
     }
+
+    // This only runs if the 'try' block fails
+    return null;
+}
 
     async logout(){
         try {

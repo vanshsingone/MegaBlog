@@ -18,36 +18,49 @@ export default function PostForm({ post }) {
     const navigate = useNavigate();
     const userData = useSelector((state) => state.auth.userData);
 
-    const submit = async (data) => {
-        if (post) {
-            const file = data.image[0] ? await appwriteService.uploadFile(data.image[0]) : null;
+   const submit = async (data) => {
+    // 1. Guard against missing user data to prevent crashes on 'userData.$id'
+    if (!userData) {
+        console.error("User not logged in");
+        return;
+    }
 
-            if (file) {
-                appwriteService.deleteFile(post.featuredImage);
-            }
+    if (post) {
+        // UPDATE EXISTING POST
+        const file = data.image && data.image[0] ? await appwriteService.uploadFile(data.image[0]) : null;
 
-            const dbPost = await appwriteService.updatePost(post.$id, {
-                ...data,
-                featuredImage: file ? file.$id : undefined,
+        if (file && post.featuredImage) {
+            await appwriteService.deleteFile(post.featuredImage);
+        }
+
+        const dbPost = await appwriteService.updatePost(post.$id, {
+            ...data,
+            featuredImage: file ? file.$id : post.featuredImage,
+        });
+
+        if (dbPost) navigate(`/post/${dbPost.$id}`);
+    } else {
+        // CREATE NEW POST
+        // FIX: Ensure the file actually exists before calling uploadFile
+        if (!data.image || !data.image[0]) {
+            console.error("No file selected for upload");
+            return;
+        }
+
+        const file = await appwriteService.uploadFile(data.image[0]);
+
+        if (file) {
+            const fileId = file.$id;
+            data.featuredImage = fileId;
+            const dbPost = await appwriteService.createPost({ 
+                ...data, 
+                userId: userData.$id 
             });
 
-            if (dbPost) {
-                navigate(`/post/${dbPost.$id}`);
-            }
-        } else {
-            const file = await appwriteService.uploadFile(data.image[0]);
-
-            if (file) {
-                const fileId = file.$id;
-                data.featuredImage = fileId;
-                const dbPost = await appwriteService.createPost({ ...data, userId: userData.$id });
-
-                if (dbPost) {
-                    navigate(`/post/${dbPost.$id}`);
-                }
-            }
+            if (dbPost) navigate(`/post/${dbPost.$id}`);
         }
-    };
+    }
+};
 
     const slugTransform = useCallback((value) => {
         if (value && typeof value === "string")
@@ -98,10 +111,10 @@ export default function PostForm({ post }) {
                     accept="image/png, image/jpg, image/jpeg, image/gif"
                     {...register("image", { required: !post })}
                 />
-                {post && (
+                {post && post.featuredImage && appwriteService.getFileView(post.featuredImage) && (
                     <div className="w-full mb-4">
                         <img
-                            src={appwriteService.getFilePreview(post.featuredImage)}
+                            src={appwriteService.getFileView(post.featuredImage)}
                             alt={post.title}
                             className="rounded-lg"
                         />

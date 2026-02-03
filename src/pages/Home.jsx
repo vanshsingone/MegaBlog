@@ -6,14 +6,15 @@ function Home() {
     const [posts, setPosts] = useState([])
 
     useEffect(() => {
-        appwriteService.getPosts().then((posts) => {
-            if (posts) {
-                setPosts(posts.documents)
-            }
-        })
-    }, [])
+    appwriteService.getPosts([]).then((posts) => { // Added [] to match typical service patterns
+        if (posts) {
+            // Use optional chaining or a fallback to ensure it's always an array
+            setPosts(posts.rows || []); 
+        }
+    })
+}, [])
   
-    if (posts.length === 0) {
+    if (!posts || posts.length === 0) {
         return (
             <div className="w-full py-8 mt-4 text-center">
                 <Container>
